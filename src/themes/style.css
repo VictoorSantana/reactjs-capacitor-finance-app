@@ -1,0 +1,39 @@
+  
+.cut-text { 
+    text-overflow: ellipsis;
+    overflow: hidden; 
+    width: 100%;     
+    white-space: nowrap;
+}
+
+.section {
+    width: 100%;
+    min-height: 100vh;
+}
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.btn-opacity {
+    opacity: .1;
+}
+.btn-opacity:hover {
+    opacity: .5;
+}
+
+.filter-selection {
+    border: none;
+    padding: 0px;
+    background-color: transparent;
+}
+
+div.custom-menu-item {
+    display: none;
+}
+button.custom-menu-item:focus + 
+div.custom-menu-item, 
+img.custom-menu-item:focus + 
+div.custom-menu-item,
+div.custom-menu-item:hover {
+    display: block;
+}

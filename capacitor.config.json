@@ -1,0 +1,7 @@
+{
+  "appId": "com.juliusfinances.web",
+  "appName": "Julius Finances",
+  "webDir": "build",
+  "npmClient": "npm",
+  "bundledWebRuntime": false
+}

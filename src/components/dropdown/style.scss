@@ -1,0 +1,14 @@
+.cdrp {
+    &--button:focus + &--list, &--list:hover {
+        display: block;
+    }
+    &--list {
+        display: none;
+        right: 0px;
+        top: 36px;
+        width: 200px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 3;
+    }
+}

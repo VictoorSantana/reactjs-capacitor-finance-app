@@ -1,0 +1,22 @@
+@import url(https://fonts.googleapis.com/css2?family=Hind:wght@300;400;500;600;700&display=swap);
+$font-family-base:Hind;
+@import url(https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&display=swap);
+$headings-font-family:'Barlow Condensed';
+
+$enable-grid-classes:true;
+$primary:#4c5da5;
+$secondary:#bbbbbd;
+$success:#7aaf2e;
+$danger:#e92528;
+$info:#efefef;
+$warning:#f1d247;
+$light:#7fa2c2;
+$dark:#26282b;
+$spacer:1rem;
+$border-width:1px;
+$white: #fafafa;
+$btn-border-radius:.25rem;
+$body-bg: #fafafa;
+
+@import './style.css';
+@import '~bootstrap/scss/bootstrap.scss';
