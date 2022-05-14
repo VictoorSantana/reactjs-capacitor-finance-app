@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from 'react-query';
-import CustomDropdown from '../../components/dropdown';
+import CustomDropdown, { toLocalMonth } from '../../components/dropdown';
 
 import './style.scss';
 
@@ -13,6 +13,18 @@ const initialState = {
     idEdit: -1,
     isPaid: false,
 };
+
+
+const kindEnum = [
+    'Geral',
+    'Imposto',
+    'Salário',
+    'Serviços',
+    'Saúde',
+    'Investimentos',
+    'Moradia',
+    'Banco'
+];
 
 const ChooseRoute = ({ history }) => {
 
@@ -34,8 +46,28 @@ const ChooseRoute = ({ history }) => {
     }
 
     const handleChangeToggle = (key) => {
-        setForm({ ...form, [key]: !form[key] })
+        setForm({ ...form, [key]: !form[key] });
     }
+
+    const handleChangePaid = (value) => {
+        let paid = false;
+        let onCredit = false;
+
+        if (Number(value) === 2) {
+            onCredit = true;
+        }
+
+        if (Number(value) > 0) {
+            paid = true;
+        }
+
+        setForm({ ...form, isPaid: paid, credit: onCredit });
+    }
+
+    const handleChangeKind = (value) => {
+        setForm({ ...form, kind: value});
+    }
+
 
     useQuery(
         ['loadFinances'],
@@ -65,6 +97,83 @@ const ChooseRoute = ({ history }) => {
         },
     );
 
+    const handleClickFinanceCard = (item, index) => {
+        const resultValue = Number(item.value) < 0 ? Number(item.value) * -1 : Number(item.value);
+        setForm({
+            value: resultValue.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' }),
+            description: item.description,
+            isPositive: Number(item.value) > 0,
+            idEdit: index,
+            isPaid: item.isPaid,
+            credit: item.credit ? item.credit : false,
+            kind: item.kind >= 0 ? item.kind : (Number(item.value) > 0 ? 2 : 0)
+        });
+        setDisplayModalAddFinance(true);
+    }
+
+    const financeCardStyle = (item) => {
+        const val = Number(item.value);
+        const paid = item.isPaid;
+
+        if (val > 0) {
+            return { borderLeft: `4px solid var(--primary)` }
+
+        } else {
+
+            if (paid) {
+                return { borderLeft: `4px solid var(--success)` }
+            } else {
+                return { borderLeft: `4px solid var(--danger)` }
+            }
+        }
+    }
+
+
+    const downloadCsv = () => {
+        try {
+            //financesDate
+            //toLocalMonth(selectedDate)
+            let csvData = toLocalMonth(selectedDate) + ';\n';
+
+            csvData += 'Status;Descrição;Valor;Tipo;\n';
+
+            for(let j = 0; j < financesDate.length; j++) {
+                const item = financesDate[j];
+                const status = item.isPaid ? (item.credit ? 'Pago c/ Crédito' : 'Pago') : 'Não Pago';
+                const value = (Number(item.value) >= 0 ? '+' : '-') + (moneyMask(item.value))
+                csvData += `${status};${item.description};${value};${item.kind >= 0 ? kindEnum[item.kind] : 'NA'};\n`;
+            }
+
+            csvData += ';\n';
+            csvData += ` Entrada ${sumFinances(financesDate, '+')}; Saída ${sumFinances(financesDate, '-')};Total ${sumFinances(financesDate, '=')};\n`
+
+        var blob = new Blob([
+            new Uint8Array([0xEF, 0xBB, 0xBF]), // UTF-8 BOM
+            csvData
+            ],
+            { type: "text/csv;charset=utf-8" });
+    
+        const url = window.URL.createObjectURL(blob); //'data:text/csv;charset=utf-8-BOM,' + encodeURIComponent(blob);
+        const filename = `${selectedDate}-contas-${new Date().getTime()}.csv`;
+    
+        var downloadLink = document.createElement("a");
+        document.body.appendChild(downloadLink);
+    
+        if (navigator.msSaveOrOpenBlob) {
+            navigator.msSaveOrOpenBlob(blob, filename);
+        } else {
+            downloadLink.href = url;
+            downloadLink.download = filename;
+            downloadLink.click();
+        }
+    
+        document.body.removeChild(downloadLink);
+        } catch (ex) {
+            console.error('Não foi possível :(');
+        }
+    }
+
+
     return (
         <>
             {
@@ -85,14 +194,36 @@ const ChooseRoute = ({ history }) => {
                         <div className="shadow bg-white position-fixed p-3 rounded" style={{ top: '10px', zIndex: 6, width: 'calc(100% - 20px)', margin: '0px 10px' }}>
                             <div className="form-group">
                                 <label> Valor: </label>
-                                <div className="d-flex align-items-center">
-                                    <button style={{ minWidth: '35px' }} type="button" onClick={() => handleChangeToggle('isPositive')} className={`btn btn-${form.isPositive ? 'success' : 'danger'} mr-1`}>{form.isPositive ? '+' : '-'}</button>
+                                <div className="d-flex align-items-center" style={{ gap: '5px' }}>
+                                    <button style={{ minWidth: '35px' }} type="button" onClick={() => handleChangeToggle('isPositive')} className={`btn btn-${form.isPositive ? 'success' : 'danger'}`}>{form.isPositive ? '+' : '-'}</button>
                                     <input type="text" value={form.value}
                                         name="value"
                                         className="form-control"
                                         onChange={(event) => handleChange(event, floatMask)}
                                         onBlur={(event) => handleChange(event, moneyMask)}></input>
-                                    <button style={{ minWidth: '103px' }} type="button" onClick={() => handleChangeToggle('isPaid')} className={`btn btn-${form.isPaid ? 'success' : 'warning'} ml-1`}>{form.isPaid ? 'Pago' : 'Não Pago'}</button>
+                                    <select style={{ width: '143px' }} onChange={(event) => handleChangePaid(event.target.value)} value={form.isPaid ? (form.credit ? 2 : 1) : 0} className="form-control">
+                                        <option value={0}> Não Pago </option>
+                                        <option value={1}> Pago </option>
+                                        {
+                                            !form.isPositive && <option value={2}> Pago c/ Crédito </option>
+                                        }
+                                    </select>
+                                    {/* <button style={{ minWidth: '143px' }} type="button" onClick={() => } className={`btn btn-${form.isPaid ? 'success' : 'warning'} ml-1`}>{form.isPaid ? 'Pago' : 'Não Pago'}</button> */}
+                                </div>
+                                <div className="d-flex align-items-center justify-content-end mt-1">
+                                    <select style={{ width: '143px' }} onChange={(event) => handleChangeKind(event.target.value)} value={form.kind} className="form-control">
+                                        {
+                                            form.isPositive ? 
+                                            (
+                                                <>
+                                                    <option value={2}> {kindEnum[2]} </option>
+                                                    <option value={0}> {kindEnum[0]} </option>
+                                                    <option value={5}> {kindEnum[5]} </option>
+                                                </>
+                                            ):
+                                            (kindEnum.map((value, index) => <option value={index}> {value} </option>))
+                                        }                                      
+                                    </select>
                                 </div>
                             </div>
                             <div className="form-group">
@@ -143,6 +274,8 @@ const ChooseRoute = ({ history }) => {
             <div className="section">
                 <div className="bg-primary d-flex w-100 align-items-center p-2 justify-content-between shadow">
                     <p className="text-white m-0 h5"> Julius Finance </p>
+                    <div>
+                        <button type="button" className="btn btn-primary" onClick={downloadCsv}> <i className="fas fa-print"></i> </button>
                     <CustomDropdown
                         theme={'primary'}
                         options={optionsDate}
@@ -151,6 +284,7 @@ const ChooseRoute = ({ history }) => {
                         onAddItem={() => setDisplayModalAddDate(true)}
                         onChange={(value) => reloadFinancesFrom(value)}
                     ></CustomDropdown>
+                    </div>
                 </div>
 
                 <div className="choose--body">
@@ -184,25 +318,18 @@ const ChooseRoute = ({ history }) => {
                             financesDate.map((item, index) =>
                                 <div key={index}
                                     className="w-100 p-2 bg-info mb-1 position-relative d-flex align-items-center justify-content-between rounded"
-                                    style={{ borderLeft: `4px solid var(--${Number(item.value) > 0 ? 'primary' : 'danger'})` }}
-                                    onClick={() => {
-                                        const resultValue = Number(item.value) < 0 ? Number(item.value) * -1 : Number(item.value);
-                                        setForm({
-                                            value: resultValue.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' }),
-                                            description: item.description,
-                                            isPositive: Number(item.value) > 0,
-                                            idEdit: index,
-                                            isPaid: item.isPaid,
-                                        });
-                                        setDisplayModalAddFinance(true);
-                                    }}
+                                    style={financeCardStyle(item)}
+                                    onClick={() => handleClickFinanceCard(item, index)}
                                 >
                                     <p className="m-0 d-inline-block" style={{ maxWidth: '65%' }}>
-                                        <p className={`text-uppercase text-${item.isPaid ? 'success' : 'danger'} m-0 d-inline-lock small`}>{item.isPaid ? 'Pago' : 'Não Pago'}</p>
+                                        <p className={`text-uppercase text-${item.isPaid ? 'success' : 'danger'} m-0 d-inline-lock small`}>{item.isPaid ? (item.credit ? 'Pago c/ Crédito' : 'Pago') : 'Não Pago'}</p>
 
                                         {item.description}
                                     </p>
-                                    <p className={`m-0 text-${Number(item.value) > 0 ? 'primary' : 'danger'} h5`}> {Number(item.value) >= 0 ? '+' : '-'} {moneyMask(item.value)} </p>
+                                    <div className="position-relative">
+                                        <p className={`m-0 text-${Number(item.value) > 0 ? 'primary' : 'danger'} h5`}> {Number(item.value) >= 0 ? '+' : '-'} {moneyMask(item.value)} </p>
+                                        {item.kind >= 0 && <small className="position-absolute text-secondary" style={{right: '0px'}}> {kindEnum[item.kind]} </small>}
+                                    </div>
                                 </div>
                             )
                         }
@@ -303,12 +430,9 @@ const ChooseRoute = ({ history }) => {
         const stored = localStorage.getItem('finances');
 
         let parsed = {};
-        if(stored) {
+        if (stored) {
             parsed = JSON.parse(stored);
         }
-        
-        // let clone = JSON.parse(JSON.stringify(financesDate));
-
 
         if (parsed[dateField]) {
             if (parsed[dateField].length > 0) {
@@ -360,7 +484,9 @@ const ChooseRoute = ({ history }) => {
                     description: form.description,
                     registred: new Date().toISOString(),
                     value: form.isPositive ? numbered : numbered * -1,
-                    isPaid: form.isPaid
+                    isPaid: form.isPaid,
+                    credit: form.credit,
+                    kind: form.kind
                 };
 
                 setFinancesDate(clone);
@@ -371,7 +497,9 @@ const ChooseRoute = ({ history }) => {
                     description: form.description,
                     registred: new Date().toISOString(),
                     value: form.isPositive ? numbered : numbered * -1,
-                    isPaid: form.isPaid
+                    isPaid: form.isPaid,
+                    credit: form.credit,
+                    kind: form.kind
                 });
 
                 setFinancesDate(clone);
@@ -389,7 +517,6 @@ const ChooseRoute = ({ history }) => {
     }
 
     function removeItem(index) {
-
         const stored = localStorage.getItem('finances');
         let parsed = JSON.parse(stored);
         let clone = JSON.parse(JSON.stringify(financesDate));
@@ -402,7 +529,6 @@ const ChooseRoute = ({ history }) => {
         localStorage.setItem('finances', JSON.stringify(parsed));
         setForm(initialState);
         setDisplayModalAddFinance(false);
-
     }
 
 
@@ -413,8 +539,9 @@ const ChooseRoute = ({ history }) => {
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             const value = Number(item.value);
+            const paidOnCredit = item.credit ? item.credit : false;
 
-            if (op === '-') {
+            if (op === '-' && !paidOnCredit) {
                 if (value < 0) {
                     total += (-1 * value);
                 }
@@ -422,7 +549,7 @@ const ChooseRoute = ({ history }) => {
                 if (value > 0) {
                     total += value;
                 }
-            } else if (op === '=') {
+            } else if (op === '=' && !paidOnCredit) {
                 total += value;
             }
 

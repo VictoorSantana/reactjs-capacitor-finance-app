@@ -18,48 +18,51 @@ const CustomDropdown = ({ theme, options, onAddItem, onChange, value }) => {
         </div>
     );
 
-    function toLocalMonth(value = '') {
-
-        if (value) {
-            const v = (value + '').split('-');
-            const month = v[0];
-            const year = v[1];
-
-            switch (Number(month)) {
-                case 1: return `Janeiro/${year}`;
-
-                case 2: return `Fevereiro/${year}`;
-
-                case 3: return `Março/${year}`;
-
-                case 4: return `Abril/${year}`;
-
-                case 5: return `Maio/${year}`;
-
-                case 6: return `Junho/${year}`;
-
-                case 7: return `Julho/${year}`;
-
-                case 8: return `Agosto/${year}`;
-
-                case 9: return `Setembro/${year}`;
-
-                case 10: return `Outubro/${year}`;
-
-                case 11: return `Novembro/${year}`;
-
-                case 12: return `Dezembro/${year}`;
-
-                default:
-                    return `${month}/${year}`;
-            }
-
-        }
-
-        return 'Err';
-    }
+    
 
 };
+
+
+export const toLocalMonth = (value = '') => {
+
+    if (value) {
+        const v = (value + '').split('-');
+        const month = v[0];
+        const year = v[1];
+
+        switch (Number(month)) {
+            case 1: return `Janeiro/${year}`;
+
+            case 2: return `Fevereiro/${year}`;
+
+            case 3: return `Março/${year}`;
+
+            case 4: return `Abril/${year}`;
+
+            case 5: return `Maio/${year}`;
+
+            case 6: return `Junho/${year}`;
+
+            case 7: return `Julho/${year}`;
+
+            case 8: return `Agosto/${year}`;
+
+            case 9: return `Setembro/${year}`;
+
+            case 10: return `Outubro/${year}`;
+
+            case 11: return `Novembro/${year}`;
+
+            case 12: return `Dezembro/${year}`;
+
+            default:
+                return `${month}/${year}`;
+        }
+
+    }
+
+    return 'Err';
+}
 
 
 export default CustomDropdown;
